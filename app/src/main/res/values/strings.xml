@@ -24,6 +24,16 @@
     <string name="refresh_game">Refresh files after a game update</string>
     <string name="card_artwork">Card artwork…</string>
     <string name="remove_game">Remove from library</string>
+    <string name="shortcut_menu">Shortcut / launch from a frontend…</string>
+    <string name="shortcut_title">Launch %1$s from outside PadPort</string>
+    <string name="shortcut_home">Add to home screen</string>
+    <string name="shortcut_file">Save shortcut file for a frontend (.padport)…</string>
+    <string name="shortcut_copy">Copy launch command (am start)</string>
+    <string name="shortcut_unsupported">This launcher cannot add shortcuts.</string>
+    <string name="shortcut_saved">Shortcut file saved. Put it in the folder your frontend scans (see README).</string>
+    <string name="shortcut_copied">Launch command copied.</string>
+    <string name="shortcut_error">Unable to save the shortcut file</string>
+    <string name="shortcut_game_missing">PadPort: this game is not in the library. Add its folder again.</string>
     <string name="artwork_title">Artwork: %1$s</string>
     <string name="choose_image">Choose an image from your device…</string>
     <string name="restore_artwork">Restore artwork from game files</string>

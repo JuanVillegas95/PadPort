@@ -137,6 +137,59 @@ first with **Export saved games** in the menu while playing. Exporting saves
 what the game has already saved - it does not create a new save of where you
 are right now.
 
+## Quick launch: home screen and frontends
+
+Every game can be started without opening the library first. In the game's **⋮** menu choose **Shortcut / launch from a frontend…**:
+
+- **Add to home screen** - a launcher icon with the game's card artwork.
+- **Save shortcut file for a frontend (.padport)** - a small file named after the game. Put these files in one folder (for example `ROMs/rpgmaker`) and point your frontend at it, so the games show up next to your other systems (Cocoon, ES-DE, Daijisho...).
+- **Copy launch command** - an `am start` line with the game's id, for frontends that take a custom command.
+
+Quitting the game (or **Back to library**) returns to the frontend. Only games that are already in PadPort's library can be launched; adding a game still happens in PadPort.
+
+**ES-DE** - add a custom system. `ES-DE/custom_systems/es_find_rules.xml`:
+
+```xml
+<ruleList>
+  <emulator name="PADPORT">
+    <rule type="androidpackage">
+      <entry>pl.padport.app/.LaunchActivity</entry>
+    </rule>
+  </emulator>
+</ruleList>
+```
+
+`ES-DE/custom_systems/es_systems.xml`:
+
+```xml
+<systemList>
+  <system>
+    <name>rpgmaker</name>
+    <fullname>RPG Maker</fullname>
+    <path>%ROMPATH%/rpgmaker</path>
+    <extension>.padport</extension>
+    <command label="PadPort">%EMULATOR_PADPORT% %ACTIVITY_CLEAR_TASK% %ACTIVITY_CLEAR_TOP% %DATA%=%ROMSAF%</command>
+    <platform>pc</platform>
+    <theme>pc</theme>
+  </system>
+</systemList>
+```
+
+**Cocoon, Daijisho and other frontends with Daijisho-style platforms** - a ready platform file is in [`docs/frontends/padport-daijisho-cocoon.json`](docs/frontends/padport-daijisho-cocoon.json). It scans `.padport` files and starts them with:
+
+```
+-n pl.padport.app/.LaunchActivity
+  -a android.intent.action.VIEW
+  -d {file.uri}
+  -e file {file.path}
+  --activity-clear-task
+  --activity-clear-top
+```
+
+If your frontend uses another syntax, any of these works: a file URI as data (`-d`), the file path as extra `file`, the title as extra `title`, or the id from **Copy launch command** as extra `game`.
+
+How PadPort finds the game: the id in the file, then the title in the file, then the file name (case, accents and punctuation are ignored, so `look_outside.padport` finds *Look Outside*). If you remove a game and add its folder again it gets a new id, but old shortcut files keep working through the title.
+
 ## Why GeckoView?
 
 MV and MZ games are web games, so PadPort needs a browser engine to run them.

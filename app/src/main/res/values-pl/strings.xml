@@ -22,6 +22,16 @@
     <string name="refresh_game">Odśwież indeks po aktualizacji gry</string>
     <string name="card_artwork">Grafika karty…</string>
     <string name="remove_game">Usuń z biblioteki</string>
+    <string name="shortcut_menu">Skrót / uruchamianie z frontendu…</string>
+    <string name="shortcut_title">Uruchamianie %1$s spoza PadPort</string>
+    <string name="shortcut_home">Dodaj do ekranu głównego</string>
+    <string name="shortcut_file">Zapisz plik skrótu dla frontendu (.padport)…</string>
+    <string name="shortcut_copy">Kopiuj polecenie uruchomienia (am start)</string>
+    <string name="shortcut_unsupported">Ten launcher nie obsługuje dodawania skrótów.</string>
+    <string name="shortcut_saved">Plik skrótu zapisany. Umieść go w folderze skanowanym przez frontend (zob. README).</string>
+    <string name="shortcut_copied">Polecenie skopiowane.</string>
+    <string name="shortcut_error">Nie można zapisać pliku skrótu</string>
+    <string name="shortcut_game_missing">PadPort: tej gry nie ma w bibliotece. Dodaj jej folder ponownie.</string>
     <string name="artwork_title">Grafika: %1$s</string>
     <string name="choose_image">Wybierz obraz z urządzenia…</string>
     <string name="restore_artwork">Przywróć grafikę z plików gry</string>

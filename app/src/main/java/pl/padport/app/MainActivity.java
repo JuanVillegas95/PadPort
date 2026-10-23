@@ -18,12 +18,12 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class MainActivity extends LocalizedActivity {
-    private static final int FOLDER=101,ARTWORK=102;
+    private static final int FOLDER=101,ARTWORK=102,SHORTCUT_FILE=103;
     private final ExecutorService worker=Executors.newSingleThreadExecutor();
     private LinearLayout root;
     private boolean scanning;
     private boolean recentOrderChanged;
-    private String artworkGame;
+    private String artworkGame,shortcutGame;
     private int generation;
     private final List<GameCard> cards=new ArrayList<>();
     private ViewTreeObserver artworkObserver;
@@ -36,7 +36,7 @@ public class MainActivity extends LocalizedActivity {
         if(!isTaskRoot()&&intent!=null&&Intent.ACTION_MAIN.equals(intent.getAction())&&intent.hasCategory(Intent.CATEGORY_LAUNCHER)){
             finish();return;
         }
-        if(state!=null)artworkGame=state.getString("artworkGame");show();
+        if(state!=null){artworkGame=state.getString("artworkGame");shortcutGame=state.getString("shortcutGame");}show();
     }
     @Override protected void onNewIntent(Intent intent){super.onNewIntent(intent);setIntent(intent);}
     @Override protected void onResume(){
@@ -44,7 +44,7 @@ public class MainActivity extends LocalizedActivity {
         if(recentOrderChanged){recentOrderChanged=false;show();}
         else if(root!=null)root.post(this::loadVisibleArtwork);
     }
-    @Override protected void onSaveInstanceState(Bundle out){super.onSaveInstanceState(out);out.putString("artworkGame",artworkGame);}
+    @Override protected void onSaveInstanceState(Bundle out){super.onSaveInstanceState(out);out.putString("artworkGame",artworkGame);out.putString("shortcutGame",shortcutGame);}
     private void show() {
         if(artworkObserver!=null&&artworkObserver.isAlive())artworkObserver.removeOnScrollChangedListener(artworkScroll);
         generation++;for(GameCard card:cards)card.releaseArtwork();cards.clear();
@@ -104,9 +104,10 @@ public class MainActivity extends LocalizedActivity {
         for(LinearLayout panel:new LinearLayout[]{GameEngine.controls(this,game,this::show),DualScreenOptions.controls(this,game,this::show)})
             if(panel.getChildCount()>0)settings.addView(panel);
         Ui.menuDialog(this,game.optString("title"),
-                    new String[]{getString(R.string.refresh_game),getString(R.string.card_artwork),getString(R.string.remove_game)},settings,(d,n)->{
+                    new String[]{getString(R.string.refresh_game),getString(R.string.card_artwork),getString(R.string.shortcut_menu),getString(R.string.remove_game)},settings,(d,n)->{
                 if(n==0)scan(Uri.parse(game.optString("uri")));
                 else if(n==1)artworkOptions(game);
+                else if(n==2)shortcutOptions(game);
                 else{
                     Library.remove(this,game.optString("id"));show();
                     // RGSS games keep a private copy of their files; saves stay for a later re-add.
@@ -116,6 +117,68 @@ public class MainActivity extends LocalizedActivity {
                     });
                 }
             }).show();
+    }
+    /** Quick launch from outside the library: home screen, frontends (Daijisho, ES-DE...), am start. */
+    private void shortcutOptions(JSONObject game){
+        String id=game.optString("id"),title=game.optString("title");
+        new AlertDialog.Builder(this).setTitle(getString(R.string.shortcut_title,title))
+            .setItems(new String[]{getString(R.string.shortcut_home),getString(R.string.shortcut_file),getString(R.string.shortcut_copy)},(d,n)->{
+                if(n==0)pinShortcut(game);
+                else if(n==1){
+                    shortcutGame=id;
+                    Intent i=new Intent(Intent.ACTION_CREATE_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE)
+                        .setType("application/octet-stream").putExtra(Intent.EXTRA_TITLE,GameLaunchRequest.fileName(title));
+                    startActivityForResult(i,SHORTCUT_FILE);
+                }else{
+                    android.content.ClipboardManager clipboard=getSystemService(android.content.ClipboardManager.class);
+                    clipboard.setPrimaryClip(android.content.ClipData.newPlainText("PadPort",GameLaunchRequest.amStart(id)));
+                    Toast.makeText(this,R.string.shortcut_copied,Toast.LENGTH_SHORT).show();
+                }
+            }).show();
+    }
+    private void pinShortcut(JSONObject game){
+        android.content.pm.ShortcutManager shortcuts=getSystemService(android.content.pm.ShortcutManager.class);
+        if(shortcuts==null||!shortcuts.isRequestPinShortcutSupported()){
+            Toast.makeText(this,R.string.shortcut_unsupported,Toast.LENGTH_LONG).show();return;
+        }
+        String id=game.optString("id"),title=game.optString("title");
+        worker.execute(()->{
+            android.graphics.drawable.Icon icon=null;
+            try{
+                Bitmap artwork=ArtworkStore.load(getApplicationContext(),game);
+                if(artwork!=null)icon=android.graphics.drawable.Icon.createWithAdaptiveBitmap(squareIcon(artwork,432));
+            }catch(Exception e){Log.w("PadPort","No artwork for shortcut: "+title,e);}
+            android.graphics.drawable.Icon finalIcon=icon!=null?icon:android.graphics.drawable.Icon.createWithResource(this,R.mipmap.ic_padport);
+            runOnUiThread(()->{
+                if(isDestroyed())return;
+                Intent launch=new Intent(Intent.ACTION_VIEW,Uri.parse(GameLaunchRequest.link(id)),this,LaunchActivity.class);
+                android.content.pm.ShortcutInfo info=new android.content.pm.ShortcutInfo.Builder(this,"game-"+id)
+                    .setShortLabel(title).setLongLabel(title).setIcon(finalIcon).setIntent(launch).build();
+                try{
+                    // Same id again updates the existing pin (e.g. after new card artwork).
+                    if(!shortcuts.requestPinShortcut(info,null))Toast.makeText(this,R.string.shortcut_unsupported,Toast.LENGTH_LONG).show();
+                }catch(IllegalStateException e){Toast.makeText(this,R.string.shortcut_unsupported,Toast.LENGTH_LONG).show();}
+            });
+        });
+    }
+    /** Centre crop; 432 px = 108 dp adaptive icon at xxxhdpi, the launcher masks the edges. */
+    private static Bitmap squareIcon(Bitmap source,int size){
+        int side=Math.min(source.getWidth(),source.getHeight());
+        Bitmap crop=Bitmap.createBitmap(source,(source.getWidth()-side)/2,(source.getHeight()-side)/2,side,side);
+        return Bitmap.createScaledBitmap(crop,size,size,true);
+    }
+    private void saveShortcutFile(String id,Uri target){
+        JSONObject game=Library.get(this,id);
+        if(game==null)return;
+        worker.execute(()->{
+            try(java.io.OutputStream out=getContentResolver().openOutputStream(target,"wt")){
+                if(out==null)throw new java.io.IOException(target.toString());
+                out.write(GameLaunchRequest.fileContent(game).getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                runOnUiThread(()->{if(!isDestroyed())Toast.makeText(this,R.string.shortcut_saved,Toast.LENGTH_LONG).show();});
+            }catch(Exception e){
+                runOnUiThread(()->{if(!isDestroyed())new AlertDialog.Builder(this).setTitle(R.string.shortcut_error).setMessage(e.toString()).setPositiveButton(R.string.ok,null).show();});
+            }
+        });
     }
     private void artworkOptions(JSONObject game){
         new AlertDialog.Builder(this).setTitle(getString(R.string.artwork_title,game.optString("title")))
@@ -143,6 +206,11 @@ public class MainActivity extends LocalizedActivity {
     }
     @Override protected void onActivityResult(int request,int result,Intent data) {
         super.onActivityResult(request,result,data);
+        if(request==SHORTCUT_FILE){
+            String id=shortcutGame;shortcutGame=null;
+            if(result==RESULT_OK&&data!=null&&data.getData()!=null&&id!=null)saveShortcutFile(id,data.getData());
+            return;
+        }
         if(request==ARTWORK){
             String id=artworkGame;artworkGame=null;
             if(result!=RESULT_OK||data==null||data.getData()==null||id==null||Library.get(this,id)==null)return;

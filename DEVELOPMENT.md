@@ -91,6 +91,22 @@ zawsze 64-bitowy. Różnice względem WebView:
 
 ## Bieżące zmiany w kodzie — bez nowego APK
 
+- **Szybkie uruchamianie spoza biblioteki (frontendy, ekran główny).**
+  `LaunchActivity` (eksportowana, `Theme.NoDisplay`, własne `taskAffinity=""`)
+  przyjmuje akcję `pl.padport.app.LAUNCH_GAME` z extra `game`/`title`/`file` (ścieżka, np. `{file.path}` w Cocoon/Daijisho),
+  `padport://game/<id>` albo plik `.padport` przez `-d` (content:// z grantem
+  od frontendu). Wybór gry jest w czystej klasie `GameLaunchRequest`
+  (test `GameLaunchRequestTest`): id → id z pliku → tytuł z extra/pliku →
+  nazwa pliku (bez wielkości liter, akcentów i interpunkcji); niejednoznaczny
+  tytuł nie uruchamia niczego. Uruchamiane są tylko gry już w bibliotece -
+  uprawnienie do folderu pochodzi z biblioteki, nie od wywołującego. Bez
+  kategorii `BROWSABLE`, więc strony WWW nie mogą startować gier.
+  MV/MZ startują z `NEW_TASK|CLEAR_TASK` (gra zostawiona w tle nie zostaje pod
+  nową); RGSS bez `CLEAR_TASK`, bo `RgssActivity` kończy proces `System.exit`
+  w `onDestroy`. W menu ⋮ karty: przypięty skrót (`ShortcutManager`, ikona
+  z grafiki karty), zapis pliku `.padport` (SAF `CREATE_DOCUMENT`) i kopiowanie
+  linii `am start`. Konfiguracja ES-DE/Daijisho: README. Nie sprawdzone
+  jeszcze na fizycznym Thorze ani w APK.
 - **To the Moon (XP/RGSS): dolny ekran jako notatnik.** Zakładki Postacie,
   Notatki i Przedmioty zawierają dane bieżącej rozgrywki. Dotknięcie wpisu
   pokazuje opis; źródłem są biogramy gry i wyłącznie posiadane przedmioty.

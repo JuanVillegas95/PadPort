@@ -1,0 +1,32 @@
+{
+  "databaseVersion": 14,
+  "revisionNumber": 1,
+  "platform": {
+    "name": "RPG Maker (PadPort)",
+    "uniqueId": "rpgmaker.padport",
+    "shortname": "rpgmaker",
+    "description": "RPG Maker MV/MZ/XP/VX/VX Ace games added in PadPort. Scan a folder of .padport shortcut files (game ⋮ menu > Shortcut / launch from a frontend > Save shortcut file).",
+    "acceptedFilenameRegex": "^(.*)\\.(?:padport)$",
+    "scraperSourceList": [],
+    "boxArtAspectRatioId": 1,
+    "useCustomBoxArtAspectRatio": false,
+    "customBoxArtAspectRatio": null,
+    "screenAspectRatioId": 1,
+    "useCustomScreenAspectRatio": false,
+    "customScreenAspectRatio": null,
+    "retroAchievementsConsoleIdList": [],
+    "extra": ""
+  },
+  "playerList": [
+    {
+      "name": "PadPort",
+      "uniqueId": "rpgmaker.padport.padport",
+      "description": "Starts the game from PadPort's library. Supported extension: padport.",
+      "acceptedFilenameRegex": "^(.*)\\.(?:padport)$",
+      "amStartArguments": "-n pl.padport.app/.LaunchActivity\n  -a android.intent.action.VIEW\n  -d {file.uri}\n  -e file {file.path}\n  --activity-clear-task\n  --activity-clear-top",
+      "killPackageProcesses": false,
+      "killPackageProcessesWarning": false,
+      "extra": ""
+    }
+  ]
+}
